@@ -10,7 +10,7 @@ import { jwtConstants } from './constants';
 import { Response } from 'express';
 import { RequestUser } from './auth.controller';
 import { ConfigService } from '@nestjs/config';
-import { createTokenRequest } from 'src/common/utils';
+import { callPersonAPI, createTokenRequest } from 'src/common/utils';
 import { Singpass, MyInfo } from '@govtechsg/singpass-myinfo-oidc-helper';
 import axios from 'axios';
 import { MyInfoRequest } from '@govtechsg/singpass-myinfo-oidc-helper/myinfo/helper';
@@ -240,10 +240,36 @@ export class AuthService {
     return uinfin;
   }
 
-  async getMyInfoToken(authCode: string) {
-    const tokenResponse = await this.singpassHelper.getTokens(authCode);
-    console.log('tokenResponse', tokenResponse);
-    return null;
+  async getMyInfoToken(authCode: string, res: Response) {
+    const request = createTokenRequest(authCode);
+    request.buffer(true).end(function (callErr, callRes) {
+      if (callErr) {
+        // ERROR
+        console.error('Token Call Error: ', callErr.status);
+        console.error(callErr.response.req.res.text);
+        res.jsonp({
+          status: 'ERROR',
+          msg: callErr,
+        });
+      } else {
+        // SUCCESSFUL
+        const data = {
+          body: callRes.body,
+          text: callRes.text,
+        };
+        console.log('Response from Token API:'.green);
+        console.log(JSON.stringify(data.body));
+        const accessToken = data.body.access_token;
+        if (accessToken == undefined || accessToken == null) {
+          res.jsonp({
+            status: 'ERROR',
+            msg: 'ACCESS TOKEN NOT FOUND',
+          });
+        }
+        // everything ok, call person API
+        callPersonAPI(accessToken, res);
+      }
+    });
   }
 
   googleLogin(req) {

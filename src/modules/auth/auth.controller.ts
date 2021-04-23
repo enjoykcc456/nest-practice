@@ -90,39 +90,9 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    // const data = await this.authService.getPersonData();
-    // return data;
-
+    // return await this.authService.getPersonData();
     const authCode = req.body.code;
-    const request = createTokenRequest(authCode);
-    request.buffer(true).end(function (callErr, callRes) {
-      if (callErr) {
-        // ERROR
-        console.error('Token Call Error: ', callErr.status);
-        console.error(callErr.response.req.res.text);
-        res.jsonp({
-          status: 'ERROR',
-          msg: callErr,
-        });
-      } else {
-        // SUCCESSFUL
-        const data = {
-          body: callRes.body,
-          text: callRes.text,
-        };
-        console.log('Response from Token API:'.green);
-        console.log(JSON.stringify(data.body));
-        const accessToken = data.body.access_token;
-        if (accessToken == undefined || accessToken == null) {
-          res.jsonp({
-            status: 'ERROR',
-            msg: 'ACCESS TOKEN NOT FOUND',
-          });
-        }
-        // everything ok, call person API
-        callPersonAPI(accessToken, res);
-      }
-    });
+    await this.authService.getMyInfoToken(authCode, res);
   }
 
   @Auth(AuthEnum.PUBLIC)
@@ -150,35 +120,7 @@ export class AuthController {
   @Post('myinfo/token')
   async getMyInfoToken(@Body() getTokenDto: GetTokenDto, @Res() res: Response) {
     const { code } = getTokenDto;
-    const request = createTokenRequest(code);
-    request.buffer(true).end(function (callErr, callRes) {
-      if (callErr) {
-        // ERROR
-        console.error('Token Call Error: ', callErr.status);
-        console.error(callErr.response.req.res.text);
-        res.jsonp({
-          status: 'ERROR',
-          msg: callErr,
-        });
-      } else {
-        // SUCCESSFUL
-        const data = {
-          body: callRes.body,
-          text: callRes.text,
-        };
-        console.log('Response from Token API:'.green);
-        console.log(JSON.stringify(data.body));
-        const accessToken = data.body.access_token;
-        if (accessToken == undefined || accessToken == null) {
-          res.jsonp({
-            status: 'ERROR',
-            msg: 'ACCESS TOKEN NOT FOUND',
-          });
-        }
-        // everything ok, call person API
-        callPersonAPI(accessToken, res);
-      }
-    });
+    await this.authService.getMyInfoToken(code, res);
   }
 
   @Auth(AuthEnum.PUBLIC)
